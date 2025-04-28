@@ -4,23 +4,31 @@ import { CreditCard, Clock, CheckCircle2, AlertCircle, ArrowUpRight } from 'luci
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useUser } from '../../contexts/UserContext';
-import { useTransactions, Transaction } from '../../contexts/TransactionContext';
+import { Transaction } from '../../contexts/TransactionContext';
+import { fetchTransactions } from '../../api/api';
 
 const CustomerDashboard: React.FC = () => {
   const { user } = useUser();
-  const { getCustomerTransactions } = useTransactions();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [recentActivity, setRecentActivity] = useState<Transaction[]>([]);
-  
-  useEffect(() => {
-    if (user.id) {
-      const userTransactions = getCustomerTransactions(user.id);
-      setTransactions(userTransactions);
-      setRecentActivity(userTransactions.slice(0, 5));
-    }
-  }, [user.id, getCustomerTransactions]);
 
-  // Example account balance
+  useEffect(() => {
+    const getTransactions = async () => {
+      if (user.id) {
+        try {
+          const response = await fetchTransactions(user.id);
+          const userTransactions: Transaction[] = response.data;
+          setTransactions(userTransactions);
+          setRecentActivity(userTransactions.slice(0, 5));
+        } catch (error) {
+          console.error('Failed to fetch transactions', error);
+        }
+      }
+    };
+
+    getTransactions();
+  }, [user.id]);
+
   const accountBalance = {
     available: 25000.00,
     currency: 'ZAR',
@@ -119,7 +127,7 @@ const CustomerDashboard: React.FC = () => {
                   {recentActivity.map((transaction) => (
                     <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-3 text-gray-700">
-                        {transaction.date.toLocaleDateString('en-ZA')}
+                      {transaction.date ? new Date(transaction.date).toLocaleDateString('en-ZA') : 'N/A'}
                       </td>
                       <td className="px-4 py-3 font-medium">
                         {transaction.currency} {transaction.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}

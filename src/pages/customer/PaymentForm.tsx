@@ -6,8 +6,8 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { useUser } from '../../contexts/UserContext';
-import { useTransactions } from '../../contexts/TransactionContext';
 import { useToaster } from '../../components/ui/Toaster';
+import { createTransaction } from '../../api/api';
 
 interface FormData {
   amount: string;
@@ -23,7 +23,6 @@ interface FormData {
 const PaymentForm: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
-  const { addTransaction } = useTransactions();
   const { addToast } = useToaster();
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -46,7 +45,7 @@ const PaymentForm: React.FC = () => {
     { value: 'USD', label: 'USD - US Dollar' },
     { value: 'EUR', label: 'EUR - Euro' },
     { value: 'GBP', label: 'GBP - British Pound' },
-    { value: 'JPY', label: 'JPY - Japanese Yen' },
+    { value: 'ZAR', label: 'ZAR - South Africa Rand' },
     { value: 'AUD', label: 'AUD - Australian Dollar' },
     { value: 'CAD', label: 'CAD - Canadian Dollar' },
     { value: 'CHF', label: 'CHF - Swiss Franc' },
@@ -125,17 +124,19 @@ const PaymentForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const newTransaction = addTransaction({
-        customerId: user.id,
+            
+      createTransaction({
+        customerId: parseInt(user.id),
         customerName: user.name,
         accountNumber: user.accountNumber || '',
         amount: parseFloat(formData.amount),
         currency: formData.currency,
         recipientAccount: formData.recipientAccount,
         swiftCode: formData.swiftCode,
+        Reference: formData.reference,
+        bankAddress: formData.bankAddress,
+        bankName: formData.bankName,
+        recipientName: formData.recipientName
       });
       
       addToast({

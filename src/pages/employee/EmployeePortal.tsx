@@ -12,10 +12,11 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { useTransactions } from '../../contexts/TransactionContext';
+
 import { useToaster } from '../../components/ui/Toaster';
-import { fetchTransactions } from '../../api/api';
-import { createTransaction } from '../../api/api';
+import { fetchAllTransactions } from '../../api/api';
+import { createTransaction, verifyTransaction } from '../../api/api';
+
 
 const EmployeePortal: React.FC = () => {
 
@@ -23,13 +24,13 @@ const EmployeePortal: React.FC = () => {
 
   useEffect(() => {
     const loadTransactions = async () => {
-      const response = await fetchTransactions();
+      const response = await fetchAllTransactions();
       setTransactions(response.data);
     };
     loadTransactions();
   }, []);
 
-  const {verifyTransaction} = useTransactions();
+  
   const { addToast } = useToaster();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,8 +53,28 @@ const EmployeePortal: React.FC = () => {
     }
   });
 
+  const loadTransactions = async () => {
+    const response = await fetchAllTransactions();
+    setTransactions(response.data);
+  };
+
   const handleVerifyTransaction = (id: string) => {
-    verifyTransaction(id);
+    try {
+      verifyTransaction(id);
+      loadTransactions();
+
+      addToast({
+        title: 'Transaction verified',
+        description: 'The transaction has been verified successfully',
+        variant: 'success',
+      });
+    } catch (error) {
+      addToast({
+        title: 'Verification failed',
+        description: 'There was an error verifying the transaction.',
+        variant: 'error',
+      });
+    }
     addToast({
       title: 'Transaction verified',
       description: 'The transaction has been verified successfully',
@@ -260,7 +281,7 @@ const EmployeePortal: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-3 text-gray-700 whitespace-nowrap">
-                        {transaction.date.toLocaleDateString('en-ZA')}
+                      {transaction.date ? new Date(transaction.date).toLocaleDateString('en-ZA') : 'N/A'}
                       </td>
                       <td className="px-6 py-3 font-medium">
                         {transaction.customerName}

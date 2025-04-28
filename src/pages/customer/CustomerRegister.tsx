@@ -92,10 +92,11 @@ const CustomerRegister: React.FC = () => {
     try {
       
       registerCustomer({
-        name: formData.fullName,
-        accountNumber: formData.accountNumber,
+        fullName: formData.fullName,
         idNumber: formData.idNumber,
+        accountNumber: formData.accountNumber,
         userName: formData.username,
+        password: formData.password,
         role: 'customer',
       });
       

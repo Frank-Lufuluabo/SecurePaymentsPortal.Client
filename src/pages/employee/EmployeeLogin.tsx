@@ -61,9 +61,7 @@ const EmployeeLogin: React.FC = () => {
     try {
       // Simulate server request
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo, we'll just log in the user directly
-      // In a real app, we would validate credentials with a backend
+     
       login({
         id: 'emp_001',
         name: 'Jane Smith',
