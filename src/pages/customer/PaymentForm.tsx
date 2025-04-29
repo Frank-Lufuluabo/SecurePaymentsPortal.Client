@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Globe, ArrowRight, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
-import { useUser } from '../../contexts/UserContext';
 import { useToaster } from '../../components/ui/Toaster';
-import { createTransaction } from '../../api/api';
+import { createTransaction, fetchCurrentCustomer } from '../../api/api';
 
 interface FormData {
   amount: string;
@@ -22,12 +21,11 @@ interface FormData {
 
 const PaymentForm: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
   const { addToast } = useToaster();
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState<FormData>({
     amount: '',
     currency: 'USD',
@@ -38,8 +36,32 @@ const PaymentForm: React.FC = () => {
     bankAddress: '',
     reference: '',
   });
-  
+
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [customer, setCustomer] = useState<any>(null);
+
+  useEffect(() => {
+    const loadCustomer = async () => {
+      try {
+        const customerId = localStorage.getItem('customerId');
+        if (!customerId) {
+          throw new Error('No customer ID found');
+        }
+        const response = await fetchCurrentCustomer(customerId);
+        setCustomer(response.data);
+      } catch (error) {
+        console.error('Failed to load customer', error);
+        addToast({
+          title: 'Error',
+          description: 'Failed to load customer information. Please login again.',
+          variant: 'error',
+        });
+        navigate('/customer-login');
+      }
+    };
+
+    loadCustomer();
+  }, [addToast, navigate]);
 
   const currencies = [
     { value: 'USD', label: 'USD - US Dollar' },
@@ -55,8 +77,7 @@ const PaymentForm: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
-    // Clear error when field is edited
+
     if (errors[name as keyof FormData]) {
       setErrors({ ...errors, [name]: undefined });
     }
@@ -64,42 +85,42 @@ const PaymentForm: React.FC = () => {
 
   const validateStep1 = (): boolean => {
     const newErrors: Partial<FormData> = {};
-    
+
     if (!formData.amount) {
       newErrors.amount = 'Amount is required';
     } else if (parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'Amount must be greater than 0';
     }
-    
+
     if (!formData.currency) {
       newErrors.currency = 'Currency is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateStep2 = (): boolean => {
     const newErrors: Partial<FormData> = {};
-    
+
     if (!formData.recipientName.trim()) {
       newErrors.recipientName = 'Recipient name is required';
     }
-    
+
     if (!formData.recipientAccount.trim()) {
       newErrors.recipientAccount = 'Account number is required';
     }
-    
+
     if (!formData.swiftCode.trim()) {
       newErrors.swiftCode = 'SWIFT code is required';
     } else if (!/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(formData.swiftCode)) {
       newErrors.swiftCode = 'Invalid SWIFT code format';
     }
-    
+
     if (!formData.bankName.trim()) {
       newErrors.bankName = 'Bank name is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -116,19 +137,27 @@ const PaymentForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateStep2()) {
       return;
     }
-    
+
+    if (!customer) {
+      addToast({
+        title: 'Error',
+        description: 'Customer information not loaded',
+        variant: 'error',
+      });
+      return;
+    }
+
     setIsLoading(true);
-    
+
     try {
-            
-      createTransaction({
-        customerId: parseInt(user.id),
-        customerName: user.name,
-        accountNumber: user.accountNumber || '',
+      await createTransaction({
+        customerId: parseInt(customer.id),
+        customerName: customer.fullName,
+        accountNumber: customer.accountNumber || '',
         amount: parseFloat(formData.amount),
         currency: formData.currency,
         recipientAccount: formData.recipientAccount,
@@ -138,13 +167,13 @@ const PaymentForm: React.FC = () => {
         bankName: formData.bankName,
         recipientName: formData.recipientName
       });
-      
+
       addToast({
         title: 'Payment initiated',
         description: 'Your payment has been submitted for processing',
         variant: 'success',
       });
-      
+
       navigate('/customer/confirmation');
     } catch (error) {
       addToast({
@@ -342,7 +371,7 @@ const PaymentForm: React.FC = () => {
           </CardFooter>
         </form>
       </Card>
-      
+
       <div className="mt-6 bg-gray-50 rounded-lg p-4">
         <h3 className="font-medium text-[#0A2463] mb-2">Important Information</h3>
         <ul className="text-sm text-gray-700 space-y-1">

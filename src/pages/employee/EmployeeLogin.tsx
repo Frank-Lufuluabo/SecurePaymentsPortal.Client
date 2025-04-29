@@ -4,8 +4,8 @@ import { Building2, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { useUser } from '../../contexts/UserContext';
 import { useToaster } from '../../components/ui/Toaster';
+import { loginUser } from './../../api/api'; 
 
 interface FormData {
   employeeId: string;
@@ -14,7 +14,6 @@ interface FormData {
 
 const EmployeeLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useUser();
   const { addToast } = useToaster();
   
   const [formData, setFormData] = useState<FormData>({
@@ -28,7 +27,6 @@ const EmployeeLogin: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // Clear error when user edits field
     if (errors[name as keyof FormData]) {
       setErrors({ ...errors, [name]: undefined });
     }
@@ -59,27 +57,33 @@ const EmployeeLogin: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Simulate server request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-     
-      login({
-        id: 'emp_001',
-        name: 'Jane Smith',
-        role: 'employee',
-        isAuthenticated: true,
+      const response = await loginUser({
+        employeeId: formData.employeeId,   
+        password: formData.password,
+        name:'.',
+        role:'employee'
+
       });
-      
+
+      const userData = response.data;
+
       addToast({
         title: 'Login successful',
-        description: 'Welcome to the employee portal',
+        description: `Welcome ${userData.name || userData.employeeId}`,
         variant: 'success',
       });
-      
+
+      localStorage.setItem('employeeId', userData.employeeId);
+
       navigate('/employee/portal');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Login failed', error);
+      
+      const errorMessage = error?.response?.data?.message || 'Login failed. Please check your credentials.';
+      
       addToast({
         title: 'Login failed',
-        description: 'Please check your credentials and try again',
+        description: errorMessage,
         variant: 'error',
       });
     } finally {
@@ -99,7 +103,7 @@ const EmployeeLogin: React.FC = () => {
         <h1 className="text-2xl font-bold text-[#0A2463]">Global Bank</h1>
         <span className="bg-[#E6AF2E] text-[#0A2463] text-xs font-bold px-2 py-0.5 rounded-md ml-2 flex items-center">
           <ShieldCheck className="h-3 w-3 mr-1" />
-          STAFF
+          EMPLOYEE
         </span>
       </div>
       

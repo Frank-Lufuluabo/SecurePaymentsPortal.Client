@@ -1,16 +1,70 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../contexts/UserContext';
-import { Building2, CreditCard, Home, LogOut, User } from 'lucide-react';
+import { Building2, CreditCard, Home, LogOut } from 'lucide-react';
+import { fetchCurrentCustomer, logoutCustomer } from '../api/api';
+
+interface CustomerProfile {
+  id: number;
+  fullName: string;
+  accountNumber: string;
+}
 
 const CustomerLayout: React.FC = () => {
-  const { user, logout } = useUser();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const [user, setUser] = useState<CustomerProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchUserProfile = async () => {
+    const customerId = localStorage.getItem('customerId');
+    if (!customerId) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      const response = await fetchCurrentCustomer(customerId);
+      setUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch customer profile:', error);
+      navigate('/');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const handleLogout = async () => {
+    const customerId = localStorage.getItem('customerId');
+    if (customerId) {
+      try {
+        await logoutCustomer(customerId);
+        localStorage.removeItem('customerId');
+      } catch (error) {
+        console.error('Logout failed', error);
+      }
+    }
     navigate('/');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">User not found. Redirecting...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -21,46 +75,42 @@ const CustomerLayout: React.FC = () => {
             <Building2 className="h-8 w-8 text-[#E6AF2E]" />
             <span className="font-bold text-xl">Global Bank</span>
           </Link>
-          
-          {user.isAuthenticated && (
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:block">
-                <p className="text-sm text-gray-200">Welcome,</p>
-                <p className="font-medium">{user.name}</p>
-              </div>
-              <button 
-                onClick={handleLogout}
-                className="flex items-center space-x-1 text-sm bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
+
+          <div className="flex items-center space-x-4">
+            <div className="hidden md:block text-right">
+              <p className="text-sm text-gray-200">Welcome,</p>
+              <p className="font-medium">{user.fullName}</p>
             </div>
-          )}
+            <button 
+              onClick={handleLogout}
+              className="flex items-center space-x-1 text-sm bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
-        
-        {user.isAuthenticated && (
-          <nav className="bg-[#051c4e] py-2">
-            <div className="container mx-auto px-4">
-              <div className="flex space-x-1 md:space-x-4">
-                <Link 
-                  to="/customer/dashboard" 
-                  className="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0A2463] transition-colors flex items-center"
-                >
-                  <Home className="h-4 w-4 mr-1.5" />
-                  <span>Dashboard</span>
-                </Link>
-                <Link 
-                  to="/customer/payment" 
-                  className="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0A2463] transition-colors flex items-center"
-                >
-                  <CreditCard className="h-4 w-4 mr-1.5" />
-                  <span>Make Payment</span>
-                </Link>
-              </div>
+
+        <nav className="bg-[#051c4e] py-2">
+          <div className="container mx-auto px-4">
+            <div className="flex space-x-1 md:space-x-4">
+              <Link 
+                to="/customer/dashboard" 
+                className="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0A2463] transition-colors flex items-center"
+              >
+                <Home className="h-4 w-4 mr-1.5" />
+                <span>Dashboard</span>
+              </Link>
+              <Link 
+                to="/customer/payment" 
+                className="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0A2463] transition-colors flex items-center"
+              >
+                <CreditCard className="h-4 w-4 mr-1.5" />
+                <span>Make Payment</span>
+              </Link>
             </div>
-          </nav>
-        )}
+          </div>
+        </nav>
       </header>
 
       {/* Main content */}

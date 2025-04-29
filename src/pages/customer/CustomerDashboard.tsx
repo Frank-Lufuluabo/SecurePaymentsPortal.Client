@@ -3,36 +3,56 @@ import { Link } from 'react-router-dom';
 import { CreditCard, Clock, CheckCircle2, AlertCircle, ArrowUpRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { useUser } from '../../contexts/UserContext';
-import { Transaction } from '../../contexts/TransactionContext';
-import { fetchTransactions } from '../../api/api';
+import { fetchCurrentCustomer, fetchTransactions } from '../../api/api';
+
+interface Transaction {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  recipientAccount: string;
+  verified: boolean;
+  submittedToSwift: boolean;
+}
+
+interface Customer {
+  id: string;
+  fullName: string;
+  accountNumber: string;
+  availableBalance: number;
+  [key: string]: any;
+}
 
 const CustomerDashboard: React.FC = () => {
-  const { user } = useUser();
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [recentActivity, setRecentActivity] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    const getTransactions = async () => {
-      if (user.id) {
-        try {
-          const response = await fetchTransactions(user.id);
-          const userTransactions: Transaction[] = response.data;
-          setTransactions(userTransactions);
-          setRecentActivity(userTransactions.slice(0, 5));
-        } catch (error) {
-          console.error('Failed to fetch transactions', error);
-        }
+    const loadCustomerData = async () => {
+      try {
+        const customerId = localStorage.getItem('customerId');
+        if (!customerId) return;
+
+         const response = await fetchCurrentCustomer(customerId);
+        setCustomer(response.data);
+
+        const txResponse = await fetchTransactions(customerId);
+        const userTransactions: Transaction[] = txResponse.data;
+        setTransactions(userTransactions);
+        setRecentActivity(userTransactions.slice(0, 5));
+      } catch (error) {
+        console.error('Failed to load customer data', error);
       }
     };
 
-    getTransactions();
-  }, [user.id]);
+    loadCustomerData();
+  }, []);
 
   const accountBalance = {
-    available: 25000.00,
+    available: customer?.availableBalance || 0,
     currency: 'ZAR',
-    pendingTransactions: transactions.filter(t => !t.verified).length,
+    pendingTransactions: transactions.filter((t) => !t.verified).length,
   };
 
   const getStatusIcon = (transaction: Transaction) => {
@@ -69,7 +89,8 @@ const CustomerDashboard: React.FC = () => {
                 <p className="text-sm text-gray-500">Available Balance</p>
                 <div className="flex items-baseline mt-1">
                   <h3 className="text-3xl font-bold text-[#0A2463]">
-                    {accountBalance.currency} {accountBalance.available.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                    {accountBalance.currency}{' '}
+                    {accountBalance.available.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
                   </h3>
                 </div>
               </div>
@@ -127,7 +148,7 @@ const CustomerDashboard: React.FC = () => {
                   {recentActivity.map((transaction) => (
                     <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-3 text-gray-700">
-                      {transaction.date ? new Date(transaction.date).toLocaleDateString('en-ZA') : 'N/A'}
+                        {transaction.date ? new Date(transaction.date).toLocaleDateString('en-ZA') : 'N/A'}
                       </td>
                       <td className="px-4 py-3 font-medium">
                         {transaction.currency} {transaction.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}

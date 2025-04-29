@@ -1,19 +1,59 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../contexts/UserContext';
 import { Building2, LogOut, ShieldCheck } from 'lucide-react';
+import { fetchCurrentUser, logoutUser } from './../api/api'; // ⬅️ Import from your API
+// (adjust path if needed)
 
 interface EmployeeLayoutProps {
   children: ReactNode;
 }
 
+interface User {
+  isAuthenticated: boolean;
+  name: string;
+}
+
 const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
-  const { user, logout } = useUser();
+  const [user, setUser] = useState<User>({ isAuthenticated: false, name: '' });
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        // 🆕 Here you need the employeeId - assuming stored in localStorage
+        const employeeId = localStorage.getItem('employeeId');
+        if (!employeeId) {
+          throw new Error('No employee ID found');
+        }
+
+        const response = await fetchCurrentUser(employeeId);
+        const userData = response.data;
+
+        setUser({
+          isAuthenticated: true,
+          name: userData.name,
+        });
+      } catch (error) {
+        console.error('Fetch user failed:', error);
+        setUser({ isAuthenticated: false, name: '' });
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+
+      const employeeId = localStorage.getItem('employeeId');
+
+      await logoutUser(employeeId); // 🆕 Using the logoutUser function
+      setUser({ isAuthenticated: false, name: '' });
+      localStorage.removeItem('employeeId'); // ⬅️ Clean up stored id
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
   };
 
   return (
@@ -29,14 +69,14 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
               STAFF
             </span>
           </Link>
-          
+
           {user.isAuthenticated && (
             <div className="flex items-center space-x-4">
               <div className="hidden md:block">
                 <p className="text-sm text-gray-200">Staff Member</p>
                 <p className="font-medium">{user.name}</p>
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="flex items-center space-x-1 text-sm bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-colors"
               >

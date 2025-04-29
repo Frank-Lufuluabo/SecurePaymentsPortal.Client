@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useUser } from '../contexts/UserContext';
+import { fetchCurrentCustomer, fetchCurrentUser } from './../api/api';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -8,13 +8,56 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
-  const { user } = useUser();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  if (!user.isAuthenticated) {
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const employeeId = localStorage.getItem('employeeId');
+        const customerId = localStorage.getItem('customerId');
+
+        if (!employeeId && !customerId) {
+          setIsAuthenticated(false);
+          return;
+        }
+        var response, user;
+
+        if(employeeId){
+           response = await fetchCurrentUser(employeeId);
+           user = response?.data;
+        }
+        else if(customerId){
+           response = await fetchCurrentCustomer(customerId);
+          user = response?.data;
+        }
+
+        if(!user)
+          return;
+
+        setIsAuthenticated(user?.isAuthenticated);
+        setUserRole(user.role);
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>; 
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to={role === 'customer' ? '/customer/login' : '/employee/login'} replace />;
   }
 
-  if (user.role !== role) {
+  if (userRole !== role) {
     return <Navigate to="/" replace />;
   }
 

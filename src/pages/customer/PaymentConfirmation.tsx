@@ -1,26 +1,48 @@
-import React, { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { CheckCircle, ArrowRight, FileText, DownloadCloud, Home } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { useTransactions } from '../../contexts/TransactionContext';
+import { fetchCurrentTransaction } from '../../api/api'; // <-- Import your API function
+
+interface Transaction {
+  id: string;
+  date: string; // We'll handle as string for now, parse later
+  currency: string;
+  amount: number;
+  recipientAccount: string;
+  swiftCode: string;
+}
 
 const PaymentConfirmation: React.FC = () => {
   const navigate = useNavigate();
-  const { currentTransaction } = useTransactions();
+  const { id } = useParams<{ id: string }>(); // Expecting /payment-confirmation/:id
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
-    // If no current transaction, redirect to dashboard
-    if (!currentTransaction) {
-      navigate('/customer/dashboard');
-    }
-  }, [currentTransaction, navigate]);
+    const fetchTransaction = async () => {
+      if (!id) {
+        navigate('/customer/dashboard');
+        return;
+      }
+      try {
+        const response = await fetchCurrentTransaction(id);
+        setCurrentTransaction(response.data);
+      } catch (error) {
+        console.error('Failed to fetch transaction:', error);
+        navigate('/customer/dashboard');
+      }
+    };
+
+    fetchTransaction();
+  }, [id, navigate]);
 
   if (!currentTransaction) {
-    return null;
+    return null; // Or a loading spinner
   }
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-ZA', {
       day: 'numeric',
       month: 'long',
