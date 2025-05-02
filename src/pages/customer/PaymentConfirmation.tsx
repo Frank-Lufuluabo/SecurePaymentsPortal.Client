@@ -3,11 +3,11 @@ import { useNavigate, Link, useParams } from 'react-router-dom';
 import { CheckCircle, ArrowRight, FileText, DownloadCloud, Home } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { fetchCurrentTransaction } from '../../api/api'; // <-- Import your API function
+import { fetchCurrentTransaction } from '../../api/api'; 
 
 interface Transaction {
   id: string;
-  date: string; // We'll handle as string for now, parse later
+  date: string; 
   currency: string;
   amount: number;
   recipientAccount: string;
@@ -16,7 +16,7 @@ interface Transaction {
 
 const PaymentConfirmation: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>(); // Expecting /payment-confirmation/:id
+  const { id } = useParams<{ id: string }>(); 
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const PaymentConfirmation: React.FC = () => {
   }, [id, navigate]);
 
   if (!currentTransaction) {
-    return null; // Or a loading spinner
+    return null; 
   }
 
   const formatDate = (dateString: string) => {

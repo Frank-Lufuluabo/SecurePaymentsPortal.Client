@@ -56,7 +56,7 @@ export const loginCustomer = async (loginData: { fullName:string, accountNumber:
   return axios.post(`${API_URL}/User/customer-login`, loginData);
 };
 
-// Logout customer user (correct endpoint now)
+// Logout customer user 
 export const logoutCustomer = async (customerId: any) => {
   return axios.post(`${API_URL}/User/customer-logout`, customerId, {
     headers: {
@@ -65,7 +65,6 @@ export const logoutCustomer = async (customerId: any) => {
   });
 };
 
-// Fixed default export including all APIs
 export default { 
   registerCustomer, 
   fetchStaff, 

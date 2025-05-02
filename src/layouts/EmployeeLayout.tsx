@@ -1,8 +1,7 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, LogOut, ShieldCheck } from 'lucide-react';
-import { fetchCurrentUser, logoutUser } from './../api/api'; // ⬅️ Import from your API
-// (adjust path if needed)
+import { fetchCurrentUser, logoutUser } from './../api/api'; 
 
 interface EmployeeLayoutProps {
   children: ReactNode;
@@ -20,7 +19,6 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // 🆕 Here you need the employeeId - assuming stored in localStorage
         const employeeId = localStorage.getItem('employeeId');
         if (!employeeId) {
           throw new Error('No employee ID found');
@@ -47,9 +45,9 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
 
       const employeeId = localStorage.getItem('employeeId');
 
-      await logoutUser(employeeId); // 🆕 Using the logoutUser function
+      await logoutUser(employeeId); 
       setUser({ isAuthenticated: false, name: '' });
-      localStorage.removeItem('employeeId'); // ⬅️ Clean up stored id
+      localStorage.removeItem('employeeId');
       navigate('/');
     } catch (error) {
       console.error('Logout failed', error);
