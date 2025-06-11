@@ -1,29 +1,38 @@
 import axios from 'axios';
 
-const API_URL = 'https://localhost:7231';
+const API_URL = 'http://localhost:5245';
+
+// Add auth token to requests if available
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const registerCustomer = async (customerData: any) => {
-  return axios.post(`${API_URL}/customer`, customerData);
+  return axios.post(`${API_URL}/Customer`, customerData);
 };
 
 export const fetchStaff = async () => {
-  return axios.get(`${API_URL}/staff`);
+  return axios.get(`${API_URL}/Staff`);
 };
 
 export const fetchTransactions = async (id: any) => {
-  return axios.get(`${API_URL}/Transaction/` + id);
+  return axios.get(`${API_URL}/Transaction/Customer/${id}`);
 };
 
-export const fetchCurrentTransaction = async (id: any) => {
-  return axios.get(`${API_URL}/Transaction/CurrentTransaction/` + id);
+export const fetchCurrentTransaction = async (id: any, userId: any) => {
+  return axios.get(`${API_URL}/Transaction/Customer/Details/id=${id}&userId=${userId}`);
 };
 
 export const fetchAllTransactions = async () => {
-  return axios.get(`${API_URL}/Transaction/Transactions/`);
+  return axios.get(`${API_URL}/Transaction/Staff`);
 };
 
 export const verifyTransaction = async (id: any) => {
-  return axios.get(`${API_URL}/Transaction/Verify/` + id);
+  return axios.post(`${API_URL}/Transaction/Staff/Verify`, id);
 };
 
 export const createTransaction = async (transactionData: any) => {
@@ -31,38 +40,39 @@ export const createTransaction = async (transactionData: any) => {
 };
 
 export const fetchCurrentUser = async (employeeId: any) => {
-  return axios.get(`${API_URL}/User/current-user/` + employeeId);
+  return axios.get(`${API_URL}/User/current-user/${employeeId}`);
 };
 
-export const loginUser = async (loginData: { employeeId: string; password: string; name: string; role: string }) => {
-  return axios.post(`${API_URL}/User/login`, loginData);
+export const loginUser = async (loginData: any) => {
+  const payload = {
+    UserName: loginData.employeeId,
+    Password: loginData.password
+  };
+  return axios.post(`${API_URL}/User/login`, payload);
 };
 
 // Logout staff user
 export const logoutUser = async (employeeId: any) => {
-  return axios.post(`${API_URL}/User/logout`, employeeId, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  return axios.post(`${API_URL}/User/logout`, employeeId);
 };
 
 export const fetchCurrentCustomer = async (customerId: any) => {
-  return axios.get(`${API_URL}/User/current-customer/` + customerId);
+  return axios.get(`${API_URL}/User/current-customer/${customerId}`);
 };
 
 // Login customer user
-export const loginCustomer = async (loginData: { fullName:string, accountNumber: string; password: string; idNumber: string; role: string, userName: string, isAuthenticated : any }) => {
-  return axios.post(`${API_URL}/User/customer-login`, loginData);
+export const loginCustomer = async (loginData: any) => {
+  const payload = {
+    UserName: loginData.userName,
+    Password: loginData.password,
+    AccountNumber: loginData.accountNumber
+  };
+  return axios.post(`${API_URL}/User/customer-login`, payload);
 };
 
 // Logout customer user 
 export const logoutCustomer = async (customerId: any) => {
-  return axios.post(`${API_URL}/User/customer-logout`, customerId, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  return axios.post(`${API_URL}/User/customer-logout`, customerId);
 };
 
 export default { 
