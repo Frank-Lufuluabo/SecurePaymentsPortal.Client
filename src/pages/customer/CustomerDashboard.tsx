@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { CreditCard, Clock, CheckCircle2, AlertCircle, ArrowUpRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { fetchCurrentCustomer, fetchTransactions } from '../../api/api';
+import { fetchCurrentCustomer, fetchTransactions } from '../../api';
 
 interface Transaction {
   id: string;
@@ -34,7 +34,7 @@ const CustomerDashboard: React.FC = () => {
         const customerId = localStorage.getItem('customerId');
         if (!customerId) return;
 
-         const response = await fetchCurrentCustomer(customerId);
+        const response = await fetchCurrentCustomer(customerId);
         setCustomer(response.data);
 
         const txResponse = await fetchTransactions(customerId);

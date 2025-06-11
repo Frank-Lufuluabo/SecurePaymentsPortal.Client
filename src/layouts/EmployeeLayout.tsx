@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, LogOut, ShieldCheck } from 'lucide-react';
-import { fetchCurrentUser, logoutUser } from './../api/api'; 
+import { fetchCurrentUser, logoutUser } from '../api';
 
 interface EmployeeLayoutProps {
   children: ReactNode;
@@ -42,7 +42,6 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
 
   const handleLogout = async () => {
     try {
-
       const employeeId = localStorage.getItem('employeeId');
 
       await logoutUser(employeeId); 

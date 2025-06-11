@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { Building2, CreditCard, Home, LogOut } from 'lucide-react';
-import { fetchCurrentCustomer, logoutCustomer } from '../api/api';
+import { fetchCurrentCustomer, logoutCustomer } from '../api';
 
 interface CustomerProfile {
   id: number;

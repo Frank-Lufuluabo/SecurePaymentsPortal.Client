@@ -48,7 +48,7 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="confirmation" 
+                  path="confirmation/:id?" 
                   element={
                     <ProtectedRoute role="customer">
                       <PaymentConfirmation />

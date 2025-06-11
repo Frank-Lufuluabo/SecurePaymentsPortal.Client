@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useToaster } from '../../components/ui/Toaster';
-import { registerCustomer } from '../../api/api';
+import { registerCustomer } from '../../api';
 
 interface FormData {
   fullName: string;
@@ -90,27 +90,28 @@ const CustomerRegister: React.FC = () => {
     setIsLoading(true);
     
     try {
-      
-      registerCustomer({
+      const response = await registerCustomer({
         fullName: formData.fullName,
+        name: formData.fullName,
         idNumber: formData.idNumber,
         accountNumber: formData.accountNumber,
         userName: formData.username,
         password: formData.password,
         role: 'customer',
+        availableBalance: 2500
       });
       
       addToast({
         title: 'Registration successful',
-        description: 'Your account has been created. Welcome to Global Bank!',
+        description: 'Your account has been created. Please log in to continue.',
         variant: 'success',
       });
       
-      navigate('/customer/dashboard');
-    } catch (error) {
+      navigate('/customer/login');
+    } catch (error: any) {
       addToast({
         title: 'Registration failed',
-        description: 'There was an error creating your account. Please try again.',
+        description: error?.response?.data?.message || error.message || 'There was an error creating your account. Please try again.',
         variant: 'error',
       });
     } finally {

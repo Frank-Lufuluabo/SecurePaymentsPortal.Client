@@ -12,31 +12,35 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-
 import { useToaster } from '../../components/ui/Toaster';
-import { fetchAllTransactions } from '../../api/api';
-import { createTransaction, verifyTransaction } from '../../api/api';
-
+import { fetchAllTransactions, verifyTransaction } from '../../api';
 
 const EmployeePortal: React.FC = () => {
-
   const [transactions, setTransactions] = useState<any[]>([]);
-
-  useEffect(() => {
-    const loadTransactions = async () => {
-      const response = await fetchAllTransactions();
-      setTransactions(response.data);
-    };
-    loadTransactions();
-  }, []);
-
-  
   const { addToast } = useToaster();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [filterVerified, setFilterVerified] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const loadTransactions = async () => {
+    try {
+      const response = await fetchAllTransactions();
+      setTransactions(response.data);
+    } catch (error) {
+      console.error('Failed to load transactions:', error);
+      addToast({
+        title: 'Error',
+        description: 'Failed to load transactions',
+        variant: 'error',
+      });
+    }
+  };
   
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = 
@@ -53,15 +57,10 @@ const EmployeePortal: React.FC = () => {
     }
   });
 
-  const loadTransactions = async () => {
-    const response = await fetchAllTransactions();
-    setTransactions(response.data);
-  };
-
-  const handleVerifyTransaction = (id: string) => {
+  const handleVerifyTransaction = async (id: string) => {
     try {
-      verifyTransaction(id);
-      loadTransactions();
+      await verifyTransaction(id);
+      await loadTransactions();
 
       addToast({
         title: 'Transaction verified',
@@ -69,17 +68,13 @@ const EmployeePortal: React.FC = () => {
         variant: 'success',
       });
     } catch (error) {
+      console.error('Verification failed:', error);
       addToast({
         title: 'Verification failed',
         description: 'There was an error verifying the transaction.',
         variant: 'error',
       });
     }
-    addToast({
-      title: 'Transaction verified',
-      description: 'The transaction has been verified successfully',
-      variant: 'success',
-    });
   };
 
   const handleSubmitToSwift = async () => {
@@ -95,8 +90,9 @@ const EmployeePortal: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-        
-      createTransaction(selectedTransactions);
+      // In a real implementation, this would be a separate API call
+      // For now, we'll simulate the submission
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       addToast({
         title: 'Submitted to SWIFT',
@@ -105,6 +101,7 @@ const EmployeePortal: React.FC = () => {
       });
       
       setSelectedTransactions([]);
+      await loadTransactions();
     } catch (error) {
       addToast({
         title: 'Submission failed',
@@ -281,7 +278,7 @@ const EmployeePortal: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-3 text-gray-700 whitespace-nowrap">
-                      {transaction.date ? new Date(transaction.date).toLocaleDateString('en-ZA') : 'N/A'}
+                        {transaction.date ? new Date(transaction.date).toLocaleDateString('en-ZA') : 'N/A'}
                       </td>
                       <td className="px-6 py-3 font-medium">
                         {transaction.customerName}
@@ -351,9 +348,6 @@ const EmployeePortal: React.FC = () => {
       </Card>
     </div>
   );
-
 };
 
 export default EmployeePortal;
-
-

@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { useToaster } from '../../components/ui/Toaster';
-import { createTransaction, fetchCurrentCustomer } from '../../api/api';
+import { createTransaction, fetchCurrentCustomer } from '../../api';
 
 interface FormData {
   amount: string;
@@ -56,7 +56,7 @@ const PaymentForm: React.FC = () => {
           description: 'Failed to load customer information. Please login again.',
           variant: 'error',
         });
-        navigate('/customer-login');
+        navigate('/customer/login');
       }
     };
 
@@ -154,7 +154,7 @@ const PaymentForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await createTransaction({
+      const response = await createTransaction({
         customerId: parseInt(customer.id),
         customerName: customer.fullName,
         accountNumber: customer.accountNumber || '',
@@ -162,7 +162,7 @@ const PaymentForm: React.FC = () => {
         currency: formData.currency,
         recipientAccount: formData.recipientAccount,
         swiftCode: formData.swiftCode,
-        Reference: formData.reference,
+        reference: formData.reference,
         bankAddress: formData.bankAddress,
         bankName: formData.bankName,
         recipientName: formData.recipientName
@@ -174,11 +174,12 @@ const PaymentForm: React.FC = () => {
         variant: 'success',
       });
 
-      navigate('/customer/confirmation');
-    } catch (error) {
+      // Navigate to confirmation page with transaction ID
+      navigate(`/customer/confirmation/${response.data.id}`);
+    } catch (error: any) {
       addToast({
         title: 'Payment failed',
-        description: 'There was an error processing your payment. Please try again.',
+        description: error?.response?.data?.message || error.message || 'There was an error processing your payment. Please try again.',
         variant: 'error',
       });
     } finally {

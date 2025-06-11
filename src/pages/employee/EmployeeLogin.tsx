@@ -5,10 +5,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useToaster } from '../../components/ui/Toaster';
-import { loginUser } from './../../api/api'; 
+import { loginUser } from '../../api';
 
 interface FormData {
-  employeeId: string;
+  username: string;
   password: string;
 }
 
@@ -17,7 +17,7 @@ const EmployeeLogin: React.FC = () => {
   const { addToast } = useToaster();
   
   const [formData, setFormData] = useState<FormData>({
-    employeeId: '',
+    username: '',
     password: '',
   });
   
@@ -35,8 +35,8 @@ const EmployeeLogin: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
     
-    if (!formData.employeeId.trim()) {
-      newErrors.employeeId = 'Employee ID is required';
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
     }
     
     if (!formData.password) {
@@ -57,29 +57,35 @@ const EmployeeLogin: React.FC = () => {
     setIsLoading(true);
     
     try {
+      console.log('Attempting login with:', { userName: formData.username, password: formData.password });
+      
       const response = await loginUser({
-        employeeId: formData.employeeId,   
+        userName: formData.username,
         password: formData.password,
-        name:'.',
-        role:'employee'
-
       });
 
       const userData = response.data;
+      console.log('Login response:', userData);
+
+      if (!userData.token) {
+        throw new Error('No authentication token received');
+      }
+
+      // Store the employee ID and token
+      localStorage.setItem('employeeId', userData.employeeId || userData.id?.toString());
+      localStorage.setItem('authToken', userData.token);
 
       addToast({
         title: 'Login successful',
-        description: `Welcome ${userData.name || userData.employeeId}`,
+        description: `Welcome ${userData.name || userData.userName}`,
         variant: 'success',
       });
-
-      localStorage.setItem('employeeId', userData.employeeId);
 
       navigate('/employee/portal');
     } catch (error: any) {
       console.error('Login failed', error);
       
-      const errorMessage = error?.response?.data?.message || 'Login failed. Please check your credentials.';
+      const errorMessage = error?.response?.data?.message || error.message || 'Login failed. Please check your credentials.';
       
       addToast({
         title: 'Login failed',
@@ -118,12 +124,12 @@ const EmployeeLogin: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <Input
-              label="Employee ID"
-              name="employeeId"
-              placeholder="Enter your employee ID"
-              value={formData.employeeId}
+              label="Username"
+              name="username"
+              placeholder="Enter your username"
+              value={formData.username}
               onChange={handleChange}
-              error={errors.employeeId}
+              error={errors.username}
               autoComplete="username"
               required
             />

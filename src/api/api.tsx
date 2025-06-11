@@ -1,86 +1,156 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5245';
+const API_URL = 'https://localhost:7231'; 
 
-// Add auth token to requests if available
-axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+// Create axios instance with interceptors for JWT token handling
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
+// Request interceptor to add JWT token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle token expiration
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('employeeId');
+      localStorage.removeItem('customerId');
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Customer APIs
 export const registerCustomer = async (customerData: any) => {
-  return axios.post(`${API_URL}/Customer`, customerData);
+  return apiClient.post('/Customer', customerData);
 };
 
+export const fetchCustomerDetails = async (customerId: string) => {
+  return apiClient.get(`/Customer/Details/${customerId}`);
+};
+
+// Staff APIs
 export const fetchStaff = async () => {
-  return axios.get(`${API_URL}/Staff`);
+  return apiClient.get('/Staff');
 };
 
-export const fetchTransactions = async (id: any) => {
-  return axios.get(`${API_URL}/Transaction/Customer/${id}`);
+// Transaction APIs - Customer
+export const fetchTransactions = async (customerId: string) => {
+  return apiClient.get(`/Transaction/Customer/${customerId}`);
 };
 
-export const fetchCurrentTransaction = async (id: any, userId: any) => {
-  return axios.get(`${API_URL}/Transaction/Customer/Details/id=${id}&userId=${userId}`);
-};
-
-export const fetchAllTransactions = async () => {
-  return axios.get(`${API_URL}/Transaction/Staff`);
-};
-
-export const verifyTransaction = async (id: any) => {
-  return axios.post(`${API_URL}/Transaction/Staff/Verify`, id);
+export const fetchCurrentTransaction = async (transactionId: string, userId: string) => {
+  return apiClient.get(`/Transaction/Customer/Details/id=${transactionId}&userId=${userId}`);
 };
 
 export const createTransaction = async (transactionData: any) => {
-  return axios.post(`${API_URL}/Transaction`, transactionData);
+  return apiClient.post('/Transaction', transactionData);
 };
 
-export const fetchCurrentUser = async (employeeId: any) => {
-  return axios.get(`${API_URL}/User/current-user/${employeeId}`);
+// Transaction APIs - Staff
+export const fetchAllTransactions = async () => {
+  return apiClient.get('/Transaction/Staff');
 };
 
-export const loginUser = async (loginData: any) => {
-  const payload = {
-    UserName: loginData.employeeId,
-    Password: loginData.password
-  };
-  return axios.post(`${API_URL}/User/login`, payload);
+export const fetchStaffTransaction = async (transactionId: string) => {
+  return apiClient.get(`/Transaction/Staff/Details/${transactionId}`);
 };
 
-// Logout staff user
-export const logoutUser = async (employeeId: any) => {
-  return axios.post(`${API_URL}/User/logout`, employeeId);
+export const verifyTransaction = async (transactionId: string) => {
+  return apiClient.post('/Transaction/Staff/Verify', transactionId, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 };
 
-export const fetchCurrentCustomer = async (customerId: any) => {
-  return axios.get(`${API_URL}/User/current-customer/${customerId}`);
+// User Authentication APIs
+export const loginUser = async (loginData: { userName: string; password: string }) => {
+  const response = await apiClient.post('/User/login', loginData);
+  
+  // Store JWT token if login successful
+  if (response.data?.token) {
+    localStorage.setItem('authToken', response.data.token);
+  }
+  
+  return response;
 };
 
-// Login customer user
-export const loginCustomer = async (loginData: any) => {
-  const payload = {
-    UserName: loginData.userName,
-    Password: loginData.password,
-    AccountNumber: loginData.accountNumber
-  };
-  return axios.post(`${API_URL}/User/customer-login`, payload);
+export const logoutUser = async (employeeId: string) => {
+  const response = await apiClient.post('/User/logout', employeeId, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  // Clear stored token and user data
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('employeeId');
+  
+  return response;
 };
 
-// Logout customer user 
-export const logoutCustomer = async (customerId: any) => {
-  return axios.post(`${API_URL}/User/customer-logout`, customerId);
+export const fetchCurrentUser = async (employeeId: string) => {
+  return apiClient.get(`/User/current-user/${employeeId}`);
+};
+
+// Customer Authentication APIs
+export const loginCustomer = async (loginData: { userName: string; password: string; accountNumber: string }) => {
+  const response = await apiClient.post('/User/customer-login', loginData);
+  
+  // Store JWT token if login successful
+  if (response.data?.token) {
+    localStorage.setItem('authToken', response.data.token);
+  }
+  
+  return response;
+};
+
+export const logoutCustomer = async (customerId: string) => {
+  const response = await apiClient.post('/User/customer-logout', customerId, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  // Clear stored token and user data
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('customerId');
+  
+  return response;
+};
+
+export const fetchCurrentCustomer = async (customerId: string) => {
+  return apiClient.get(`/User/current-customer/${customerId}`);
 };
 
 export default { 
-  registerCustomer, 
+  registerCustomer,
+  fetchCustomerDetails,
   fetchStaff, 
   fetchTransactions, 
   fetchCurrentTransaction,
   fetchAllTransactions,
+  fetchStaffTransaction,
   verifyTransaction, 
   createTransaction,
   fetchCurrentUser,

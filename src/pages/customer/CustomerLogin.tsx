@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useToaster } from '../../components/ui/Toaster';
-import { loginCustomer,  logoutCustomer, } from '../../api/api';
+import { loginCustomer } from '../../api';
 
 interface FormData {
   username: string;
@@ -54,17 +54,13 @@ const CustomerLogin: React.FC = () => {
 
     try {
       const loginData = {
-        fullName:'.',
-        idNumber: '.',
-        role: 'customer', 
-        isAuthenticated : false, 
         userName: formData.username,
         accountNumber: formData.accountNumber,
         password: formData.password,
       };
 
       const response = await loginCustomer(loginData);
-      const user = response.data;
+      const user = response.data.user;
 
       if (!user.isAuthenticated) {
         throw new Error('Authentication failed');
@@ -83,7 +79,7 @@ const CustomerLogin: React.FC = () => {
       console.error('Login error:', error);
       addToast({
         title: 'Login failed',
-        description: error.response?.data?.message || 'Please check your credentials and try again',
+        description: error.response?.data?.message || error.message || 'Please check your credentials and try again',
         variant: 'error',
       });
     } finally {
